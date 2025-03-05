@@ -2,9 +2,8 @@
 import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
-import { motion } from 'framer-motion';
+import { Interactive, useXR } from '@react-three/xr';
 import { Group, Mesh, MeshStandardMaterial } from 'three';
-import { Interactive } from '@react-three/xr';
 
 interface QueueItemProps {
   position: [number, number, number];
@@ -82,6 +81,13 @@ interface FifoQueueProps {
 }
 
 const FifoQueue: React.FC<FifoQueueProps> = ({ items }) => {
+  const { isPresenting } = useXR();
+  
+  // Log VR status to help debug
+  React.useEffect(() => {
+    console.log('VR Presenting:', isPresenting);
+  }, [isPresenting]);
+
   return (
     <group position={[0, 0, 0]}>
       {/* Queue container */}
