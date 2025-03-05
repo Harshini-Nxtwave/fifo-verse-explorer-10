@@ -95,13 +95,19 @@ const Index = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-4xl md:text-5xl font-bold text-gradient">FIFO Queue Visualizer</h1>
-        <p className="mt-2 text-lg text-gray-600">An interactive 3D visualization of the First-In-First-Out concept</p>
+        <h1 className="text-4xl md:text-5xl font-bold text-gradient">FIFO Queue VR Experience</h1>
+        <p className="mt-2 text-lg text-gray-600">An immersive VR visualization of the First-In-First-Out concept</p>
+        <div className="mt-3 px-4 py-2 bg-purple-100 text-purple-800 rounded-lg inline-flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm0-9a1 1 0 011 1v3a1 1 0 11-2 0V8a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          Click the "VR" button in the top-right corner to enter VR mode
+        </div>
       </motion.header>
       
       <div className="flex-1 container mx-auto px-4 pb-10 flex flex-col lg:flex-row gap-6 items-start">
         <motion.div 
-          className="w-full lg:w-2/3 h-[500px] rounded-lg overflow-hidden shadow-xl"
+          className="w-full lg:w-2/3 h-[500px] rounded-lg overflow-hidden shadow-xl relative"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -129,6 +135,21 @@ const Index = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <FifoExplanation />
+          </motion.div>
+          
+          <motion.div
+            className="bg-white rounded-lg shadow-md p-4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <h3 className="text-lg font-semibold mb-2">VR Controls</h3>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>Use VR controllers to interact with queue items</li>
+              <li>Point at an item and press the trigger to select it</li>
+              <li>Select the ENQUEUE button to add new items</li>
+              <li>Select the DEQUEUE button to remove items</li>
+            </ul>
           </motion.div>
         </div>
       </div>
