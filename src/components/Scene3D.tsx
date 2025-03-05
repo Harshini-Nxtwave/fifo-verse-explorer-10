@@ -24,9 +24,23 @@ const Loader = () => {
 
 // Checks if VR is supported and initialized
 const VRStatus = () => {
-  const { isPresenting, isSessionSupported } = useXR();
+  const { isPresenting, session } = useXR();
   
-  if (!isSessionSupported) {
+  // If no session is available after a certain time, we assume VR is not supported
+  const [showNotSupported, setShowNotSupported] = useState(false);
+  
+  React.useEffect(() => {
+    // Give the browser some time to initialize VR support
+    const timer = setTimeout(() => {
+      if (!session && !isPresenting) {
+        setShowNotSupported(true);
+      }
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, [session, isPresenting]);
+  
+  if (showNotSupported) {
     return (
       <Html center>
         <div className="bg-red-500/90 text-white px-4 py-3 rounded-lg">
