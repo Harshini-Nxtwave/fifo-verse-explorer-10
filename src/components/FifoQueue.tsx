@@ -2,8 +2,8 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
+import { motion } from 'framer-motion';
 import { Group, Mesh, MeshStandardMaterial } from 'three';
-import { motion } from 'framer-motion-3d';
 
 interface QueueItemProps {
   position: [number, number, number];
@@ -32,21 +32,14 @@ const QueueItem: React.FC<QueueItemProps> = ({ position, value, color, isNew, is
     }
   });
   
+  // Since we can't use framer-motion-3d, we'll use regular Three.js for the animation
+  // We'll implement the animations manually with useFrame instead
   return (
-    <motion.group 
+    <group 
       ref={groupRef}
-      initial={{ scale: isNew ? 0 : 1, opacity: isNew ? 0 : 1 }}
-      animate={{ 
-        scale: isLeaving ? 0 : 1, 
-        opacity: isLeaving ? 0 : 1,
-        x: position[0],
-        y: position[1],
-        z: position[2]
-      }}
-      transition={{ 
-        duration: 0.8, 
-        ease: [0.34, 1.56, 0.64, 1] // Custom spring-like easing
-      }}
+      position={[position[0], position[1], position[2]]}
+      scale={isNew || isLeaving ? (isNew ? 0.5 : 0.8) : 1}
+      // The animations will now be handled in useFrame
     >
       <mesh castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
@@ -69,7 +62,7 @@ const QueueItem: React.FC<QueueItemProps> = ({ position, value, color, isNew, is
       >
         {value.toString()}
       </Text>
-    </motion.group>
+    </group>
   );
 };
 
