@@ -50,7 +50,7 @@ const TransparentBox = ({ position, children }) => {
   return (
     <group position={position}>
       <mesh receiveShadow>
-        <boxGeometry args={[2, 2, 2]} />
+        <boxGeometry args={[2, 3, 2]} />
         <meshStandardMaterial color="#ffffff" transparent opacity={0.2} />
       </mesh>
       {children}
@@ -58,13 +58,24 @@ const TransparentBox = ({ position, children }) => {
   );
 };
 
-// Queue Item Component
-const QueueItem = ({ position, color }) => {
+// Queue Item Component with index
+const QueueItem = ({ position, color, index }) => {
   return (
-    <mesh position={position} castShadow>
-      <boxGeometry args={[0.4, 0.4, 0.4]} />
-      <meshStandardMaterial color={color} />
-    </mesh>
+    <group position={position}>
+      <mesh castShadow>
+        <boxGeometry args={[0.8, 0.8, 0.8]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+      <Text
+        position={[0, 0, 0.41]}
+        fontSize={0.3}
+        color="#ffffff"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {index}
+      </Text>
+    </group>
   );
 };
 
@@ -136,31 +147,20 @@ const FIFOScene = () => {
       <ColoredSquare position={[-2, 1, 2]} color={SQUARE_COLORS[2]} onClick={handleEnqueue} />
       <ColoredSquare position={[2, 1, 2]} color={SQUARE_COLORS[3]} onClick={handleEnqueue} />
       
-      {/* Transparent box in the center */}
-      <TransparentBox position={[0, 1, 0]}>
-        {/* Queue items inside the box */}
+      {/* Transparent box positioned behind the buttons for better visibility */}
+      <TransparentBox position={[0, 1.5, -2.5]}>
+        {/* Queue items inside the box - stacked vertically */}
         {queue.map((color, index) => {
-          // Calculate position inside the box
-          // We'll arrange them in a grid pattern
-          const x = ((index % 4) - 1.5) * 0.5;
-          const y = (Math.floor(index / 4) - 0.5) * 0.5;
-          return <QueueItem key={index} position={[x, y, 0]} color={color} />;
+          // Calculate vertical position, starting from the bottom
+          // Each item is stacked on top of the previous one
+          const y = -1 + (index * 0.5); // 0.5 spacing between items
+          return <QueueItem key={index} position={[0, y, 0]} color={color} index={index} />;
         })}
       </TransparentBox>
       
       {/* Repositioned VR Buttons for easier interaction - positioned at eye level, closer to user */}
       <VRButton3D position={[-0.5, 1.2, -1.2]} label="Enqueue" onClick={handleEnqueue} />
       <VRButton3D position={[0.5, 1.2, -1.2]} label="Dequeue" onClick={handleDequeue} />
-      
-      {/* Make the colored squares interactive with XR */}
-      <Interactive onSelect={handleEnqueue}>
-        <group position={[-1.5, 1, -1.5]}>
-          <mesh castShadow>
-            <sphereGeometry args={[0.2]} />
-            <meshStandardMaterial color={SQUARE_COLORS[0]} emissive={SQUARE_COLORS[0]} emissiveIntensity={0.3} />
-          </mesh>
-        </group>
-      </Interactive>
       
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
