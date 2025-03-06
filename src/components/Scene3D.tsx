@@ -40,7 +40,8 @@ const TransparentBox = ({ position, children }) => {
 
 // Disc Item Component with animation and glow effect
 const DiscItem = ({ position, color, index, isNew = false, isLeaving = false }) => {
-  const discRef = useRef<Group>(null);
+  // Fix: Specify the correct type for the ref to work with framer-motion-3d
+  const discRef = useRef<THREE.Group>(null);
   const materialRef = useRef<MeshStandardMaterial>(null);
   const [glowing, setGlowing] = useState(isNew || isLeaving);
   
