@@ -24,27 +24,6 @@ const Loader = () => {
 // Define colors for our squares
 const SQUARE_COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9'];
 
-// Colored Square Component
-const ColoredSquare = ({ position, color, onClick }) => {
-  const ref = useRef<Group>(null);
-  
-  useFrame((state) => {
-    if (ref.current) {
-      // Simple floating animation
-      ref.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.5 + position[0]) * 0.1;
-    }
-  });
-  
-  return (
-    <group ref={ref} position={position} onClick={onClick}>
-      <mesh castShadow>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
-        <meshStandardMaterial color={color} metalness={0.2} roughness={0.1} />
-      </mesh>
-    </group>
-  );
-};
-
 // Transparent Box Component
 const TransparentBox = ({ position, children }) => {
   return (
@@ -66,16 +45,17 @@ const QueueItem = ({ position, color, index }) => {
       <Text
         position={[-0.6, 0, 0]}
         fontSize={0.3}
-        color="#ffffff"
+        color="#D6BCFA" // Changed to Light Purple for better visibility
         anchorX="center"
         anchorY="middle"
+        fontWeight="bold"
       >
         {index}
       </Text>
       
-      {/* The box itself */}
+      {/* The box itself - decreased size */}
       <mesh castShadow>
-        <boxGeometry args={[0.8, 0.8, 0.8]} />
+        <boxGeometry args={[0.6, 0.6, 0.6]} /> {/* Reduced from 0.8 to 0.6 */}
         <meshStandardMaterial color={color} />
       </mesh>
     </group>
@@ -144,19 +124,15 @@ const FIFOScene = () => {
   
   return (
     <>
-      {/* Colored squares around the box */}
-      <ColoredSquare position={[-2, 1, -2]} color={SQUARE_COLORS[0]} onClick={handleEnqueue} />
-      <ColoredSquare position={[2, 1, -2]} color={SQUARE_COLORS[1]} onClick={handleEnqueue} />
-      <ColoredSquare position={[-2, 1, 2]} color={SQUARE_COLORS[2]} onClick={handleEnqueue} />
-      <ColoredSquare position={[2, 1, 2]} color={SQUARE_COLORS[3]} onClick={handleEnqueue} />
+      {/* Removed the four colored squares around the room */}
       
       {/* Transparent box positioned behind the buttons for better visibility */}
       <TransparentBox position={[0, 1.5, -2.5]}>
         {/* Queue items inside the box - stacked vertically with proper spacing */}
         {queue.map((color, index) => {
           // Calculate vertical position, starting from the bottom
-          // Each item is stacked on top of the previous one with increased spacing
-          const y = -1 + (index * 1.1); // Increased spacing from 0.5 to 1.1 to avoid collisions
+          // Each item is stacked on top of the previous one with smaller spacing due to smaller boxes
+          const y = -1 + (index * 0.8); // Adjusted spacing from 1.1 to 0.8 for smaller boxes
           return <QueueItem key={index} position={[0, y, 0]} color={color} index={index} />;
         })}
       </TransparentBox>
