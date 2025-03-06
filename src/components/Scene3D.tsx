@@ -2,7 +2,7 @@
 import React, { Suspense, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, useProgress, Html, Box, Text } from '@react-three/drei';
-import { VRButton, XR, Controllers, Hands, useXR } from '@react-three/xr';
+import { VRButton, XR, Controllers, Hands, useXR, Interactive } from '@react-three/xr';
 import { Group, Vector3 } from 'three';
 
 // Loading indicator
@@ -68,36 +68,39 @@ const QueueItem = ({ position, color }) => {
   );
 };
 
-// VR Buttons - Improved and repositioned for better interactivity
+// Enhanced VR Button with better interaction
 const VRButton3D = ({ position, label, onClick }) => {
   const { isPresenting } = useXR();
-  const buttonRef = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
   
   if (!isPresenting) return null;
   
   return (
-    <group
-      position={position}
-      onClick={onClick}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
-      ref={buttonRef}
-    >
-      <mesh castShadow>
-        <boxGeometry args={[0.8, 0.3, 0.1]} />
-        <meshStandardMaterial color={hovered ? "#4c1d95" : "#8B5CF6"} />
-      </mesh>
-      <Text
-        position={[0, 0, 0.06]}
-        fontSize={0.1}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {label}
-      </Text>
-    </group>
+    <Interactive onSelect={onClick}>
+      <group position={position}>
+        <mesh 
+          castShadow 
+          onPointerOver={() => setHovered(true)}
+          onPointerOut={() => setHovered(false)}
+        >
+          <boxGeometry args={[0.8, 0.3, 0.1]} />
+          <meshStandardMaterial 
+            color={hovered ? "#4c1d95" : "#8B5CF6"} 
+            emissive={hovered ? "#8B5CF6" : "#4c1d95"}
+            emissiveIntensity={hovered ? 0.5 : 0.2}
+          />
+        </mesh>
+        <Text
+          position={[0, 0, 0.06]}
+          fontSize={0.1}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {label}
+        </Text>
+      </group>
+    </Interactive>
   );
 };
 
@@ -145,9 +148,19 @@ const FIFOScene = () => {
         })}
       </TransparentBox>
       
-      {/* Improved VR Buttons - positioned closer to player for better interaction */}
-      <VRButton3D position={[-0.6, 0.5, -0.7]} label="Enqueue" onClick={handleEnqueue} />
-      <VRButton3D position={[0.6, 0.5, -0.7]} label="Dequeue" onClick={handleDequeue} />
+      {/* Repositioned VR Buttons for easier interaction - positioned at eye level, closer to user */}
+      <VRButton3D position={[-0.5, 1.2, -1.2]} label="Enqueue" onClick={handleEnqueue} />
+      <VRButton3D position={[0.5, 1.2, -1.2]} label="Dequeue" onClick={handleDequeue} />
+      
+      {/* Make the colored squares interactive with XR */}
+      <Interactive onSelect={handleEnqueue}>
+        <group position={[-1.5, 1, -1.5]}>
+          <mesh castShadow>
+            <sphereGeometry args={[0.2]} />
+            <meshStandardMaterial color={SQUARE_COLORS[0]} emissive={SQUARE_COLORS[0]} emissiveIntensity={0.3} />
+          </mesh>
+        </group>
+      </Interactive>
       
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -185,7 +198,10 @@ const Scene3D: React.FC<Scene3DProps> = () => {
           {/* Enable XR/VR mode */}
           <XR>
             {/* VR Controllers and hands */}
-            <Controllers rayMaterial={{ color: "purple" }} />
+            <Controllers 
+              rayMaterial={{ color: "purple" }} 
+              hideRaysOnBlur={false}
+            />
             <Hands />
             
             {/* FIFO Queue Visualization Scene */}
