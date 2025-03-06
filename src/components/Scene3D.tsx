@@ -3,8 +3,6 @@ import React, { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, useProgress, Html, Box, Text } from '@react-three/drei';
 import { VRButton, XR, Controllers, Hands, useXR, Interactive } from '@react-three/xr';
-import { Group, Vector3, MeshStandardMaterial } from 'three';
-import { motion } from 'framer-motion-3d';
 
 // Loading indicator
 const Loader = () => {
@@ -30,7 +28,7 @@ const TransparentBox = ({ position, children }) => {
   return (
     <group position={position}>
       <mesh receiveShadow>
-        <boxGeometry args={[5, 3, 2]} /> {/* Increased width from 2.5 to 5 */}
+        <boxGeometry args={[5, 3, 2]} /> {/* Increased width to 5 to accommodate multiple columns */}
         <meshStandardMaterial color="#ffffff" transparent opacity={0.2} />
       </mesh>
       {children}
@@ -38,42 +36,10 @@ const TransparentBox = ({ position, children }) => {
   );
 };
 
-// Disc Item Component with animation and glow effect
-const DiscItem = ({ position, color, index, isNew = false, isLeaving = false }) => {
-  // Fix: Use any type here to resolve the type incompatibility between Three.js Group and framer-motion-3d
-  const discRef = useRef<any>(null);
-  const materialRef = useRef<MeshStandardMaterial>(null);
-  const [glowing, setGlowing] = useState(isNew || isLeaving);
-  
-  // Animation for new or leaving items
-  useEffect(() => {
-    if (isNew || isLeaving) {
-      setGlowing(true);
-      const timer = setTimeout(() => {
-        setGlowing(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isNew, isLeaving]);
-  
-  // Glow effect animation
-  useFrame((state) => {
-    if (materialRef.current && glowing) {
-      // Pulsating emissive intensity for glow effect
-      const intensity = Math.sin(state.clock.elapsedTime * 5) * 0.2 + 0.3;
-      materialRef.current.emissiveIntensity = intensity;
-    }
-  });
-  
+// Disc Item Component
+const DiscItem = ({ position, color, index }) => {
   return (
-    <motion.group 
-      ref={discRef} 
-      position={position}
-      initial={isNew ? { scale: 0, y: position[1] + 1 } : undefined}
-      animate={{ scale: 1, y: position[1] }}
-      exit={isLeaving ? { scale: 0, x: position[0] - 2 } : undefined}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
+    <group position={position}>
       {/* Index number placed to the left of the disc */}
       <Text
         position={[-0.5, 0, 0]}
@@ -86,17 +52,12 @@ const DiscItem = ({ position, color, index, isNew = false, isLeaving = false }) 
         {index}
       </Text>
       
-      {/* The disc itself - now a cylinder with reduced height */}
+      {/* The disc itself - a cylinder with reduced height */}
       <mesh castShadow>
         <cylinderGeometry args={[0.3, 0.3, 0.15, 32]} /> {/* Disc shape with reduced height */}
-        <meshStandardMaterial 
-          ref={materialRef}
-          color={color} 
-          emissive={color}
-          emissiveIntensity={glowing ? 0.5 : 0}
-        />
+        <meshStandardMaterial color={color} />
       </mesh>
-    </motion.group>
+    </group>
   );
 };
 
@@ -138,10 +99,10 @@ const VRButton3D = ({ position, label, onClick }) => {
 
 // FIFO Scene with interactive elements and multi-column layout
 const FIFOScene = () => {
-  const [queue, setQueue] = useState<Array<{ color: string, isNew?: boolean, isLeaving?: boolean }>>([]);
+  const [queue, setQueue] = useState<Array<{ color: string }>>([]);
   const MAX_ITEMS_PER_COLUMN = 10; // Maximum discs in a column
   const MAX_TOTAL_ITEMS = 30; // Maximum total discs (3 columns of 10)
-  const DISC_SPACING = 0.4; // Reduced spacing between discs
+  const DISC_SPACING = 0.25; // Reduced spacing between discs
   
   // Handle enqueue action
   const handleEnqueue = () => {
@@ -149,14 +110,7 @@ const FIFOScene = () => {
     
     // Get a random color from our palette
     const newColor = DISC_COLORS[Math.floor(Math.random() * DISC_COLORS.length)];
-    setQueue(prev => [...prev, { color: newColor, isNew: true }]);
-    
-    // Remove isNew flag after animation completes
-    setTimeout(() => {
-      setQueue(prev => prev.map((item, idx) => 
-        idx === prev.length - 1 ? { ...item, isNew: false } : item
-      ));
-    }, 2500);
+    setQueue(prev => [...prev, { color: newColor }]);
     
     console.log("Enqueued item, queue size:", queue.length + 1);
   };
@@ -165,17 +119,7 @@ const FIFOScene = () => {
   const handleDequeue = () => {
     if (queue.length === 0) return;
     
-    // Mark the first item as leaving (for animation)
-    setQueue(prev => [
-      { ...prev[0], isLeaving: true },
-      ...prev.slice(1)
-    ]);
-    
-    // Remove the item after animation completes
-    setTimeout(() => {
-      setQueue(prev => prev.slice(1));
-    }, 2000);
-    
+    setQueue(prev => prev.slice(1));
     console.log("Dequeued item, queue size:", queue.length - 1);
   };
   
@@ -203,8 +147,6 @@ const FIFOScene = () => {
               position={[x, y, 0]} 
               color={item.color} 
               index={index} 
-              isNew={item.isNew}
-              isLeaving={item.isLeaving}
             />
           );
         })}
