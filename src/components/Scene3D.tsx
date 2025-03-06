@@ -1,10 +1,9 @@
 
-import React, { Suspense, useRef, useState } from 'react';
+import React, { Suspense, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Stage, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
-import { VRButton, XR, Controllers, Hands, Interactive, useXR } from '@react-three/xr';
+import { OrbitControls, Environment, useProgress, Html } from '@react-three/drei';
+import { VRButton, XR, Controllers, Hands } from '@react-three/xr';
 import { Group } from 'three';
-import FifoQueue from './FifoQueue';
 
 // Loading indicator
 const Loader = () => {
@@ -22,58 +21,38 @@ const Loader = () => {
   );
 };
 
-// Checks if VR is supported and initialized
-const VRStatus = () => {
-  const { isPresenting, session } = useXR();
+// Basic 3D ball/sphere
+const VRBall = () => {
+  const ballRef = useRef<Group>(null);
   
-  // If no session is available after a certain time, we assume VR is not supported
-  const [showNotSupported, setShowNotSupported] = useState(false);
+  useFrame((state) => {
+    if (ballRef.current) {
+      // Simple floating animation
+      ballRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
+      // Slow rotation
+      ballRef.current.rotation.y += 0.005;
+    }
+  });
   
-  React.useEffect(() => {
-    // Give the browser some time to initialize VR support
-    const timer = setTimeout(() => {
-      if (!session && !isPresenting) {
-        setShowNotSupported(true);
-      }
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, [session, isPresenting]);
-  
-  if (showNotSupported) {
-    return (
-      <Html center>
-        <div className="bg-red-500/90 text-white px-4 py-3 rounded-lg">
-          <h3 className="text-lg font-bold">VR Not Supported</h3>
-          <p>Your browser doesn't support WebXR or VR hardware was not detected.</p>
-          <p className="mt-2 text-sm">Try using a different browser or connect a VR headset.</p>
-        </div>
-      </Html>
-    );
-  }
-  
-  return null;
+  return (
+    <group ref={ballRef} position={[0, 1, -1]}>
+      <mesh castShadow>
+        <sphereGeometry args={[0.5, 32, 32]} />
+        <meshStandardMaterial 
+          color="#8B5CF6" 
+          metalness={0.2}
+          roughness={0.1}
+        />
+      </mesh>
+    </group>
+  );
 };
 
 interface Scene3DProps {
   queueItems: Array<{ id: string; value: string | number; color: string; isNew?: boolean; isLeaving?: boolean }>;
 }
 
-const RotatingStage: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const groupRef = useRef<Group>(null);
-  const { isPresenting } = useXR();
-  
-  useFrame((state) => {
-    if (groupRef.current && !isPresenting) {
-      // Very subtle automatic rotation - only when not in VR
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.05;
-    }
-  });
-  
-  return <group ref={groupRef}>{children}</group>;
-};
-
-const Scene3D: React.FC<Scene3DProps> = ({ queueItems }) => {
+const Scene3D: React.FC<Scene3DProps> = () => {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden relative">
       {/* VR button for entering VR mode */}
@@ -85,31 +64,40 @@ const Scene3D: React.FC<Scene3DProps> = ({ queueItems }) => {
           
           {/* Enable XR/VR mode */}
           <XR>
-            <VRStatus />
-            <PerspectiveCamera makeDefault position={[0, 1, 8]} fov={50} />
-            
             {/* VR Controllers and hands */}
             <Controllers />
             <Hands />
             
-            <Stage environment="city" shadows={{ type: 'contact', opacity: 0.2, blur: 3 }} adjustCamera={false}>
-              <RotatingStage>
-                <FifoQueue items={queueItems} />
-              </RotatingStage>
-            </Stage>
+            {/* Simple VR scene with just a ball */}
+            <ambientLight intensity={0.5} />
+            <directionalLight 
+              position={[5, 5, 5]} 
+              intensity={1} 
+              castShadow 
+              shadow-mapSize-width={1024} 
+              shadow-mapSize-height={1024}
+            />
+            
+            <VRBall />
+            
+            {/* Floor */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+              <planeGeometry args={[10, 10]} />
+              <meshStandardMaterial color="#e0e0e0" />
+            </mesh>
             
             {/* OrbitControls for non-VR mode */}
             <OrbitControls 
               enableZoom={true} 
               enablePan={false}
-              minPolarAngle={Math.PI / 3}
+              minPolarAngle={Math.PI / 6}
               maxPolarAngle={Math.PI / 2}
               dampingFactor={0.05}
               rotateSpeed={0.5}
             />
           </XR>
           
-          <Environment preset="city" />
+          <Environment preset="sunset" />
         </Suspense>
       </Canvas>
     </div>
