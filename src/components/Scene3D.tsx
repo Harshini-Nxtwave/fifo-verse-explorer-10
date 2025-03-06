@@ -50,7 +50,7 @@ const TransparentBox = ({ position, children }) => {
   return (
     <group position={position}>
       <mesh receiveShadow>
-        <boxGeometry args={[2, 3, 2]} />
+        <boxGeometry args={[2.5, 3, 2]} />
         <meshStandardMaterial color="#ffffff" transparent opacity={0.2} />
       </mesh>
       {children}
@@ -58,16 +58,13 @@ const TransparentBox = ({ position, children }) => {
   );
 };
 
-// Queue Item Component with index
+// Queue Item Component with index number placed to the left
 const QueueItem = ({ position, color, index }) => {
   return (
     <group position={position}>
-      <mesh castShadow>
-        <boxGeometry args={[0.8, 0.8, 0.8]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
+      {/* Index number placed to the left of the box */}
       <Text
-        position={[0, 0, 0.41]}
+        position={[-0.6, 0, 0]}
         fontSize={0.3}
         color="#ffffff"
         anchorX="center"
@@ -75,6 +72,12 @@ const QueueItem = ({ position, color, index }) => {
       >
         {index}
       </Text>
+      
+      {/* The box itself */}
+      <mesh castShadow>
+        <boxGeometry args={[0.8, 0.8, 0.8]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
     </group>
   );
 };
@@ -149,11 +152,11 @@ const FIFOScene = () => {
       
       {/* Transparent box positioned behind the buttons for better visibility */}
       <TransparentBox position={[0, 1.5, -2.5]}>
-        {/* Queue items inside the box - stacked vertically */}
+        {/* Queue items inside the box - stacked vertically with proper spacing */}
         {queue.map((color, index) => {
           // Calculate vertical position, starting from the bottom
-          // Each item is stacked on top of the previous one
-          const y = -1 + (index * 0.5); // 0.5 spacing between items
+          // Each item is stacked on top of the previous one with increased spacing
+          const y = -1 + (index * 1.1); // Increased spacing from 0.5 to 1.1 to avoid collisions
           return <QueueItem key={index} position={[0, y, 0]} color={color} index={index} />;
         })}
       </TransparentBox>
