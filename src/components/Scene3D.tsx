@@ -68,7 +68,7 @@ const QueueItem = ({ position, color }) => {
   );
 };
 
-// VR Buttons
+// VR Buttons - Improved and repositioned for better interactivity
 const VRButton3D = ({ position, label, onClick }) => {
   const { isPresenting } = useXR();
   const buttonRef = useRef<Group>(null);
@@ -145,9 +145,9 @@ const FIFOScene = () => {
         })}
       </TransparentBox>
       
-      {/* VR Buttons */}
-      <VRButton3D position={[-1, 0.3, -1]} label="Enqueue" onClick={handleEnqueue} />
-      <VRButton3D position={[1, 0.3, -1]} label="Dequeue" onClick={handleDequeue} />
+      {/* Improved VR Buttons - positioned closer to player for better interaction */}
+      <VRButton3D position={[-0.6, 0.5, -0.7]} label="Enqueue" onClick={handleEnqueue} />
+      <VRButton3D position={[0.6, 0.5, -0.7]} label="Dequeue" onClick={handleDequeue} />
       
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -185,7 +185,7 @@ const Scene3D: React.FC<Scene3DProps> = () => {
           {/* Enable XR/VR mode */}
           <XR>
             {/* VR Controllers and hands */}
-            <Controllers />
+            <Controllers rayMaterial={{ color: "purple" }} />
             <Hands />
             
             {/* FIFO Queue Visualization Scene */}
