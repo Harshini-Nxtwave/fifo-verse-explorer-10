@@ -1,9 +1,9 @@
 
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, useProgress, Html } from '@react-three/drei';
-import { VRButton, XR, Controllers, Hands } from '@react-three/xr';
-import { Group } from 'three';
+import { OrbitControls, Environment, useProgress, Html, Box, Text } from '@react-three/drei';
+import { VRButton, XR, Controllers, Hands, useXR } from '@react-three/xr';
+import { Group, Vector3 } from 'three';
 
 // Loading indicator
 const Loader = () => {
@@ -21,35 +21,155 @@ const Loader = () => {
   );
 };
 
-// Basic 3D ball/sphere
-const VRBall = () => {
-  const ballRef = useRef<Group>(null);
+// Define colors for our squares
+const SQUARE_COLORS = ['#8B5CF6', '#D946EF', '#F97316', '#0EA5E9'];
+
+// Colored Square Component
+const ColoredSquare = ({ position, color, onClick }) => {
+  const ref = useRef<Group>(null);
   
   useFrame((state) => {
-    if (ballRef.current) {
+    if (ref.current) {
       // Simple floating animation
-      ballRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-      // Slow rotation
-      ballRef.current.rotation.y += 0.005;
+      ref.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.5 + position[0]) * 0.1;
     }
   });
   
   return (
-    <group ref={ballRef} position={[0, 1, -1]}>
+    <group ref={ref} position={position} onClick={onClick}>
       <mesh castShadow>
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial 
-          color="#8B5CF6" 
-          metalness={0.2}
-          roughness={0.1}
-        />
+        <boxGeometry args={[0.5, 0.5, 0.5]} />
+        <meshStandardMaterial color={color} metalness={0.2} roughness={0.1} />
       </mesh>
     </group>
   );
 };
 
+// Transparent Box Component
+const TransparentBox = ({ position, children }) => {
+  return (
+    <group position={position}>
+      <mesh receiveShadow>
+        <boxGeometry args={[2, 2, 2]} />
+        <meshStandardMaterial color="#ffffff" transparent opacity={0.2} />
+      </mesh>
+      {children}
+    </group>
+  );
+};
+
+// Queue Item Component
+const QueueItem = ({ position, color }) => {
+  return (
+    <mesh position={position} castShadow>
+      <boxGeometry args={[0.4, 0.4, 0.4]} />
+      <meshStandardMaterial color={color} />
+    </mesh>
+  );
+};
+
+// VR Buttons
+const VRButton3D = ({ position, label, onClick }) => {
+  const { isPresenting } = useXR();
+  const buttonRef = useRef<Group>(null);
+  const [hovered, setHovered] = useState(false);
+  
+  if (!isPresenting) return null;
+  
+  return (
+    <group
+      position={position}
+      onClick={onClick}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+      ref={buttonRef}
+    >
+      <mesh castShadow>
+        <boxGeometry args={[0.8, 0.3, 0.1]} />
+        <meshStandardMaterial color={hovered ? "#4c1d95" : "#8B5CF6"} />
+      </mesh>
+      <Text
+        position={[0, 0, 0.06]}
+        fontSize={0.1}
+        color="#ffffff"
+        anchorX="center"
+        anchorY="middle"
+      >
+        {label}
+      </Text>
+    </group>
+  );
+};
+
+// FIFO Scene with interactive elements
+const FIFOScene = () => {
+  const [queue, setQueue] = useState<string[]>([]);
+  const MAX_QUEUE_SIZE = 8; // Maximum items in the queue
+  
+  // Handle enqueue action
+  const handleEnqueue = () => {
+    if (queue.length >= MAX_QUEUE_SIZE) return;
+    
+    // Get a random color from our palette
+    const newColor = SQUARE_COLORS[Math.floor(Math.random() * SQUARE_COLORS.length)];
+    setQueue(prev => [...prev, newColor]);
+    
+    console.log("Enqueued item, queue size:", queue.length + 1);
+  };
+  
+  // Handle dequeue action
+  const handleDequeue = () => {
+    if (queue.length === 0) return;
+    
+    setQueue(prev => prev.slice(1));
+    console.log("Dequeued item, queue size:", queue.length - 1);
+  };
+  
+  return (
+    <>
+      {/* Colored squares around the box */}
+      <ColoredSquare position={[-2, 1, -2]} color={SQUARE_COLORS[0]} onClick={handleEnqueue} />
+      <ColoredSquare position={[2, 1, -2]} color={SQUARE_COLORS[1]} onClick={handleEnqueue} />
+      <ColoredSquare position={[-2, 1, 2]} color={SQUARE_COLORS[2]} onClick={handleEnqueue} />
+      <ColoredSquare position={[2, 1, 2]} color={SQUARE_COLORS[3]} onClick={handleEnqueue} />
+      
+      {/* Transparent box in the center */}
+      <TransparentBox position={[0, 1, 0]}>
+        {/* Queue items inside the box */}
+        {queue.map((color, index) => {
+          // Calculate position inside the box
+          // We'll arrange them in a grid pattern
+          const x = ((index % 4) - 1.5) * 0.5;
+          const y = (Math.floor(index / 4) - 0.5) * 0.5;
+          return <QueueItem key={index} position={[x, y, 0]} color={color} />;
+        })}
+      </TransparentBox>
+      
+      {/* VR Buttons */}
+      <VRButton3D position={[-1, 0.3, -1]} label="Enqueue" onClick={handleEnqueue} />
+      <VRButton3D position={[1, 0.3, -1]} label="Dequeue" onClick={handleDequeue} />
+      
+      {/* Floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+        <planeGeometry args={[10, 10]} />
+        <meshStandardMaterial color="#e0e0e0" />
+      </mesh>
+      
+      {/* Lighting */}
+      <ambientLight intensity={0.5} />
+      <directionalLight 
+        position={[5, 5, 5]} 
+        intensity={1} 
+        castShadow 
+        shadow-mapSize-width={1024} 
+        shadow-mapSize-height={1024}
+      />
+    </>
+  );
+};
+
 interface Scene3DProps {
-  queueItems: Array<{ id: string; value: string | number; color: string; isNew?: boolean; isLeaving?: boolean }>;
+  queueItems?: Array<{ id: string; value: string | number; color: string; isNew?: boolean; isLeaving?: boolean }>;
 }
 
 const Scene3D: React.FC<Scene3DProps> = () => {
@@ -68,23 +188,8 @@ const Scene3D: React.FC<Scene3DProps> = () => {
             <Controllers />
             <Hands />
             
-            {/* Simple VR scene with just a ball */}
-            <ambientLight intensity={0.5} />
-            <directionalLight 
-              position={[5, 5, 5]} 
-              intensity={1} 
-              castShadow 
-              shadow-mapSize-width={1024} 
-              shadow-mapSize-height={1024}
-            />
-            
-            <VRBall />
-            
-            {/* Floor */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-              <planeGeometry args={[10, 10]} />
-              <meshStandardMaterial color="#e0e0e0" />
-            </mesh>
+            {/* FIFO Queue Visualization Scene */}
+            <FIFOScene />
             
             {/* OrbitControls for non-VR mode */}
             <OrbitControls 
