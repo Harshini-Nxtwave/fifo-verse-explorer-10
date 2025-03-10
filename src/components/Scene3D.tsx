@@ -1,8 +1,8 @@
-
 import React, { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, useProgress, Html, Box, Text, Sky, Plane } from '@react-three/drei';
 import { VRButton, XR, Controllers, Hands, useXR, Interactive } from '@react-three/xr';
+import * as THREE from 'three';
 
 // Loading indicator
 const Loader = () => {
@@ -87,8 +87,10 @@ const InteractiveWhiteboard = ({ position }) => {
 
 // Student's Desk Component
 const StudentDesk = ({ position, rotation = [0, 0, 0] }) => {
+  const eulerRotation = new THREE.Euler(rotation[0], rotation[1], rotation[2]);
+  
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position} rotation={eulerRotation}>
       {/* Desk Top */}
       <mesh position={[0, 0.6, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.7, 0.05, 0.5]} />
@@ -121,7 +123,7 @@ const TransparentBox = ({ position, children }) => {
   return (
     <group position={position}>
       <mesh receiveShadow>
-        <boxGeometry args={[5, 3, 2]} /> {/* Width for multiple columns */}
+        <boxGeometry args={[5, 3, 2]} />
         <meshStandardMaterial color="#ffffff" transparent opacity={0.2} />
       </mesh>
       {children}
@@ -137,7 +139,7 @@ const DiscItem = ({ position, color, index }) => {
       <Text
         position={[-0.5, 0, 0]}
         fontSize={0.25}
-        color="#D6BCFA" // Light Purple for better visibility
+        color="#D6BCFA"
         anchorX="center"
         anchorY="middle"
         fontWeight="bold"
@@ -147,7 +149,7 @@ const DiscItem = ({ position, color, index }) => {
       
       {/* The disc itself - a cylinder with reduced height */}
       <mesh castShadow>
-        <cylinderGeometry args={[0.3, 0.3, 0.15, 32]} /> {/* Disc shape with reduced height */}
+        <cylinderGeometry args={[0.3, 0.3, 0.15, 32]} />
         <meshStandardMaterial color={color} />
       </mesh>
     </group>
@@ -193,22 +195,19 @@ const VRButton3D = ({ position, label, onClick }) => {
 // Classroom Scene with FIFO visualization
 const ClassroomScene = () => {
   const [queue, setQueue] = useState<Array<{ color: string }>>([]);
-  const MAX_ITEMS_PER_COLUMN = 10; // Maximum discs in a column
-  const MAX_TOTAL_ITEMS = 30; // Maximum total discs (3 columns of 10)
-  const DISC_SPACING = 0.25; // Reduced spacing between discs
+  const MAX_ITEMS_PER_COLUMN = 10;
+  const MAX_TOTAL_ITEMS = 30;
+  const DISC_SPACING = 0.25;
   
-  // Handle enqueue action
   const handleEnqueue = () => {
     if (queue.length >= MAX_TOTAL_ITEMS) return;
     
-    // Get a random color from our palette
     const newColor = DISC_COLORS[Math.floor(Math.random() * DISC_COLORS.length)];
     setQueue(prev => [...prev, { color: newColor }]);
     
     console.log("Enqueued item, queue size:", queue.length + 1);
   };
   
-  // Handle dequeue action
   const handleDequeue = () => {
     if (queue.length === 0) return;
     
@@ -218,14 +217,11 @@ const ClassroomScene = () => {
   
   return (
     <>
-      {/* Classroom Environment */}
       <Sky distance={450000} sunPosition={[0, 1, 0]} inclination={0.49} azimuth={0.25} />
       
-      {/* Classroom Elements */}
       <InteractiveWhiteboard position={[0, 0, -3.5]} />
       <TeachersDesk position={[0, 0, -2.5]} />
       
-      {/* Student Desks - arranged in a semi-circle */}
       <StudentDesk position={[-2.5, 0, -1]} rotation={[0, Math.PI / 6, 0]} />
       <StudentDesk position={[-2, 0, 0]} rotation={[0, Math.PI / 8, 0]} />
       <StudentDesk position={[-1, 0, 0.5]} rotation={[0, Math.PI / 12, 0]} />
@@ -234,20 +230,11 @@ const ClassroomScene = () => {
       <StudentDesk position={[2, 0, 0]} rotation={[0, -Math.PI / 8, 0]} />
       <StudentDesk position={[2.5, 0, -1]} rotation={[0, -Math.PI / 6, 0]} />
       
-      {/* FIFO Visualization */}
       <TransparentBox position={[0, 2.5, -3]}>
-        {/* Queue items organized in columns of 10 */}
         {queue.map((item, index) => {
-          // Calculate column index (0, 1, 2)
           const columnIndex = Math.floor(index / MAX_ITEMS_PER_COLUMN);
-          
-          // Calculate position within column (0-9)
           const positionInColumn = index % MAX_ITEMS_PER_COLUMN;
-          
-          // Calculate x position based on column (-1.5, 0, 1.5)
           const x = -1.5 + (columnIndex * 1.5);
-          
-          // Calculate y position within column, stacking from bottom to top
           const y = -1 + (positionInColumn * DISC_SPACING);
           
           return (
@@ -261,17 +248,14 @@ const ClassroomScene = () => {
         })}
       </TransparentBox>
       
-      {/* VR Buttons for interaction */}
       <VRButton3D position={[-0.5, 1.2, -1.2]} label="Enqueue" onClick={handleEnqueue} />
       <VRButton3D position={[0.5, 1.2, -1.2]} label="Dequeue" onClick={handleDequeue} />
       
-      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[15, 15]} />
         <meshStandardMaterial color="#F2FCE2" />
       </mesh>
       
-      {/* Walls */}
       <mesh position={[0, 1.5, -5]} receiveShadow>
         <boxGeometry args={[15, 3, 0.1]} />
         <meshStandardMaterial color="#D3E4FD" />
@@ -285,12 +269,10 @@ const ClassroomScene = () => {
         <meshStandardMaterial color="#D3E4FD" />
       </mesh>
       
-      {/* Ceiling Lights */}
       <pointLight position={[0, 2.8, -3]} intensity={0.8} castShadow />
       <pointLight position={[-3, 2.8, 0]} intensity={0.8} castShadow />
       <pointLight position={[3, 2.8, 0]} intensity={0.8} castShadow />
       
-      {/* Ambient Lighting */}
       <ambientLight intensity={0.5} />
       <directionalLight 
         position={[5, 5, 5]} 
@@ -310,26 +292,21 @@ interface Scene3DProps {
 const Scene3D: React.FC<Scene3DProps> = () => {
   return (
     <div className="w-full h-full rounded-lg overflow-hidden relative">
-      {/* VR button for entering VR mode */}
       <VRButton className="absolute top-4 right-4 z-10" />
       
       <Canvas shadows>
         <Suspense fallback={<Loader />}>
           <color attach="background" args={['#f8f9fa']} />
           
-          {/* Enable XR/VR mode */}
           <XR>
-            {/* VR Controllers and hands */}
             <Controllers 
               rayMaterial={{ color: "purple" }} 
               hideRaysOnBlur={false}
             />
             <Hands />
             
-            {/* Classroom Scene with FIFO Queue Visualization */}
             <ClassroomScene />
             
-            {/* OrbitControls for non-VR mode */}
             <OrbitControls 
               enableZoom={true} 
               enablePan={false}
