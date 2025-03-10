@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, useProgress, Html, Text } from '@react-three/drei';
 import { VRButton, XR, Controllers, Hands, useXR, Interactive } from '@react-three/xr';
@@ -130,10 +130,30 @@ const FIFOScene = () => {
   const [queue, setQueue] = useState([]);
   // Track positions separately to ensure smooth transitions
   const [positions, setPositions] = useState([]);
+  
+  // Audio refs for sound effects
+  const enqueueSound = useRef(null);
+  const dequeueSound = useRef(null);
 
   const MAX_ITEMS_PER_COLUMN = 5;
   const MAX_TOTAL_ITEMS = 15;
   const DISC_SPACING = 0.3; // Increased spacing significantly
+
+  // Initialize audio elements
+  useEffect(() => {
+    enqueueSound.current = new Audio("/fifo-verse-explorer-10/sounds/enque-sound.mp3");
+    dequeueSound.current = new Audio("/fifo-verse-explorer-10/sounds/deque-sound.mp3");
+    
+    // Preload the sounds
+    enqueueSound.current.load();
+    dequeueSound.current.load();
+    
+    return () => {
+      // Cleanup
+      enqueueSound.current = null;
+      dequeueSound.current = null;
+    };
+  }, []);
 
   // Calculate all possible positions
   const calculatePositions = (length) => {
@@ -158,6 +178,12 @@ const FIFOScene = () => {
   const handleEnqueue = () => {
     if (queue.length >= MAX_TOTAL_ITEMS) return;
     
+    // Play enqueue sound
+    if (enqueueSound.current) {
+      enqueueSound.current.currentTime = 0; // Reset to start
+      enqueueSound.current.play().catch(e => console.error("Error playing enqueue sound:", e));
+    }
+    
     // Get the last item's color to avoid using the same color
     const lastItemColor = queue.length > 0 ? queue[queue.length - 1].color : null;
     
@@ -177,6 +203,13 @@ const FIFOScene = () => {
   // Dequeue
   const handleDequeue = () => {
     if (queue.length === 0) return;
+    
+    // Play dequeue sound
+    if (dequeueSound.current) {
+      dequeueSound.current.currentTime = 0; // Reset to start
+      dequeueSound.current.play().catch(e => console.error("Error playing dequeue sound:", e));
+    }
+    
     setQueue(prev => prev.map((item, idx) => (idx === 0 ? { ...item, isLeaving: true } : item)));
     setTimeout(() => {
       setQueue(prev => prev.slice(1));
