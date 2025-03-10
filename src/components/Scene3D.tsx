@@ -1,3 +1,4 @@
+
 import React, { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, useProgress, Html, Box, Text, Sky, Plane } from '@react-three/drei';
@@ -192,6 +193,23 @@ const VRButton3D = ({ position, label, onClick }) => {
   );
 };
 
+// Controls component to conditionally render orbit controls
+const Controls = () => {
+  const { isPresenting } = useXR();
+  
+  // Only render OrbitControls when not in VR mode
+  return isPresenting ? null : (
+    <OrbitControls 
+      enableZoom={true} 
+      enablePan={false}
+      minPolarAngle={Math.PI / 6}
+      maxPolarAngle={Math.PI / 2}
+      dampingFactor={0.05}
+      rotateSpeed={0.5}
+    />
+  );
+};
+
 // Classroom Scene with FIFO visualization
 const ClassroomScene = () => {
   const [queue, setQueue] = useState<Array<{ color: string }>>([]);
@@ -217,17 +235,17 @@ const ClassroomScene = () => {
   
   return (
     <>
-      <Sky distance={450000} sunPosition={[0, 1, 0]} inclination={0.49} azimuth={0.25} />
+      {/* Use lower-quality sky for better performance */}
+      <Sky distance={450000} sunPosition={[0, 1, 0]} inclination={0.49} azimuth={0.25} turbidity={10} rayleigh={0.5} />
       
       <InteractiveWhiteboard position={[0, 0, -3.5]} />
       <TeachersDesk position={[0, 0, -2.5]} />
       
+      {/* Reduced number of desks for better performance */}
       <StudentDesk position={[-2.5, 0, -1]} rotation={[0, Math.PI / 6, 0]} />
-      <StudentDesk position={[-2, 0, 0]} rotation={[0, Math.PI / 8, 0]} />
-      <StudentDesk position={[-1, 0, 0.5]} rotation={[0, Math.PI / 12, 0]} />
+      <StudentDesk position={[-1.5, 0, 0]} rotation={[0, Math.PI / 10, 0]} />
       <StudentDesk position={[0, 0, 0.7]} />
-      <StudentDesk position={[1, 0, 0.5]} rotation={[0, -Math.PI / 12, 0]} />
-      <StudentDesk position={[2, 0, 0]} rotation={[0, -Math.PI / 8, 0]} />
+      <StudentDesk position={[1.5, 0, 0]} rotation={[0, -Math.PI / 10, 0]} />
       <StudentDesk position={[2.5, 0, -1]} rotation={[0, -Math.PI / 6, 0]} />
       
       <TransparentBox position={[0, 2.5, -3]}>
@@ -251,35 +269,39 @@ const ClassroomScene = () => {
       <VRButton3D position={[-0.5, 1.2, -1.2]} label="Enqueue" onClick={handleEnqueue} />
       <VRButton3D position={[0.5, 1.2, -1.2]} label="Dequeue" onClick={handleDequeue} />
       
+      {/* Floor and walls with optimized materials */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[15, 15]} />
-        <meshStandardMaterial color="#F2FCE2" />
+        <meshStandardMaterial color="#F2FCE2" roughness={0.8} metalness={0.2} />
       </mesh>
       
       <mesh position={[0, 1.5, -5]} receiveShadow>
         <boxGeometry args={[15, 3, 0.1]} />
-        <meshStandardMaterial color="#D3E4FD" />
+        <meshStandardMaterial color="#D3E4FD" roughness={0.7} />
       </mesh>
       <mesh position={[-7.5, 1.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <boxGeometry args={[10, 3, 0.1]} />
-        <meshStandardMaterial color="#D3E4FD" />
+        <meshStandardMaterial color="#D3E4FD" roughness={0.7} />
       </mesh>
       <mesh position={[7.5, 1.5, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <boxGeometry args={[10, 3, 0.1]} />
-        <meshStandardMaterial color="#D3E4FD" />
+        <meshStandardMaterial color="#D3E4FD" roughness={0.7} />
       </mesh>
       
-      <pointLight position={[0, 2.8, -3]} intensity={0.8} castShadow />
-      <pointLight position={[-3, 2.8, 0]} intensity={0.8} castShadow />
-      <pointLight position={[3, 2.8, 0]} intensity={0.8} castShadow />
-      
-      <ambientLight intensity={0.5} />
+      {/* Optimized lighting setup */}
+      <pointLight position={[0, 2.8, -3]} intensity={0.6} castShadow shadow-mapSize-width={512} shadow-mapSize-height={512} />
+      <ambientLight intensity={0.4} />
       <directionalLight 
         position={[5, 5, 5]} 
-        intensity={0.8} 
+        intensity={0.6} 
         castShadow 
-        shadow-mapSize-width={1024} 
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={512} 
+        shadow-mapSize-height={512}
+        shadow-camera-far={15}
+        shadow-camera-left={-7}
+        shadow-camera-right={7}
+        shadow-camera-top={7}
+        shadow-camera-bottom={-7}
       />
     </>
   );
@@ -294,11 +316,11 @@ const Scene3D: React.FC<Scene3DProps> = () => {
     <div className="w-full h-full rounded-lg overflow-hidden relative">
       <VRButton className="absolute top-4 right-4 z-10" />
       
-      <Canvas shadows>
+      <Canvas shadows gl={{ antialias: true, powerPreference: 'high-performance' }}>
         <Suspense fallback={<Loader />}>
           <color attach="background" args={['#f8f9fa']} />
           
-          <XR>
+          <XR frameRate={72}>
             <Controllers 
               rayMaterial={{ color: "purple" }} 
               hideRaysOnBlur={false}
@@ -307,14 +329,8 @@ const Scene3D: React.FC<Scene3DProps> = () => {
             
             <ClassroomScene />
             
-            <OrbitControls 
-              enableZoom={true} 
-              enablePan={false}
-              minPolarAngle={Math.PI / 6}
-              maxPolarAngle={Math.PI / 2}
-              dampingFactor={0.05}
-              rotateSpeed={0.5}
-            />
+            {/* Controls are now moved to a separate component */}
+            <Controls />
           </XR>
           
           <Environment preset="sunset" />
