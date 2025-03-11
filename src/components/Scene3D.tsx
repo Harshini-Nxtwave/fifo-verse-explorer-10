@@ -511,7 +511,7 @@ const FIFOScene = () => {
   const MAX_TOTAL_ITEMS = 15;
   const DISC_SPACING = 0.3; // Increased spacing significantly
 
-  // Initialize audio elements
+  // Initialize audio elements and load saved queue data
   useEffect(() => {
     enqueueSound.current = new Audio("/fifo-verse-explorer-10/sounds/enque-sound.mp3");
     dequeueSound.current = new Audio("/fifo-verse-explorer-10/sounds/deque-sound.mp3");
@@ -520,12 +520,47 @@ const FIFOScene = () => {
     enqueueSound.current.load();
     dequeueSound.current.load();
     
+    // Load saved queue from localStorage
+    const savedQueue = localStorage.getItem('fifo-queue');
+    if (savedQueue) {
+      try {
+        const parsedQueue = JSON.parse(savedQueue);
+        // Ensure all items have isNew and isLeaving set to false on load
+        const processedQueue = parsedQueue.map(item => ({
+          ...item, 
+          isNew: false, 
+          isLeaving: false
+        }));
+        setQueue(processedQueue);
+      } catch (error) {
+        console.error('Error loading saved queue:', error);
+      }
+    }
+    
     return () => {
       // Cleanup
       enqueueSound.current = null;
       dequeueSound.current = null;
     };
   }, []);
+
+  // Save queue to localStorage whenever it changes
+  useEffect(() => {
+    // Always save the queue, even if items are in transition state
+    // Just make sure to save with isNew and isLeaving set to false for proper reload
+    if (queue.length > 0) {
+      // Create a clean version of the queue with no transition states
+      const cleanQueue = queue.map(item => ({
+        ...item,
+        isNew: false,
+        isLeaving: false
+      }));
+      localStorage.setItem('fifo-queue', JSON.stringify(cleanQueue));
+    } else {
+      // If queue is empty, ensure localStorage is cleared
+      localStorage.removeItem('fifo-queue');
+    }
+  }, [queue]);
 
   // Calculate all possible positions
   const calculatePositions = (length) => {
@@ -584,7 +619,11 @@ const FIFOScene = () => {
     
     setQueue(prev => prev.map((item, idx) => (idx === 0 ? { ...item, isLeaving: true } : item)));
     setTimeout(() => {
-      setQueue(prev => prev.slice(1));
+      setQueue(prev => {
+        const newQueue = prev.slice(1);
+        // No need to update localStorage here as the useEffect will handle it
+        return newQueue;
+      });
     }, 300);
   };
 
